@@ -26,6 +26,7 @@
         width: 100%;
         border-collapse: collapse;
         margin-top: 20px;
+        margin-bottom: 20px;
     }
     td {
         padding: 8px;
@@ -44,7 +45,12 @@
     <h1>Browser & User Agent Info</h1>
 
     <table id="infoTable"></table>
-</div>
+
+    <!-- Opens the camera immediately for a photo -->
+    <input type="file" accept="image/*" capture="environment">
+
+    <!-- Opens the camera immediately for a video -->
+    <input type="file" accept="video/*" capture="environment">
 
 <script>
 
