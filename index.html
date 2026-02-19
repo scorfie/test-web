@@ -45,10 +45,7 @@
     <h1>Browser & User Agent Info</h1>
 
     <table id="infoTable"></table>
-
-    <!-- Opens the camera immediately for a photo -->
-    <input type="file" accept="image/*" capture="environment">
-
+    
     <!-- Opens the camera immediately for a selfie -->
     <input type="file" accept="image/*" capture="user">
 
@@ -127,6 +124,8 @@ function loadInfo() {
 
     addRow("Screen Resolution", `${screen.width} x ${screen.height}`);
     addRow("Viewport Size", `${window.innerWidth} x ${window.innerHeight}`);
+
+    addRow("Back Camera", <input type="file" accept="image/*" capture="environment">);
 }
 
 loadInfo();
