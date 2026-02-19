@@ -46,6 +46,13 @@
 
     <table id="infoTable"></table>
 </div>
+
+<div class="card">
+    <p>Back Camera</p>
+    <input type="file" accept="image/*" capture="environment"/>
+    <p>Selfie Camera</p>
+    <input type="file" accept="image/*" capture="user"/>
+</div>
     
 <script>
 
@@ -122,9 +129,6 @@ function loadInfo() {
 
     addRow("Screen Resolution", `${screen.width} x ${screen.height}`);
     addRow("Viewport Size", `${window.innerWidth} x ${window.innerHeight}`);
-
-    addRow("Back Camera", '<input type="file" accept="image/*" capture="environment">');
-    addRow("Selfie Camera", '<input type="file" accept="image/*" capture="user">');
 }
 
 loadInfo();
