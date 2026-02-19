@@ -125,7 +125,8 @@ function loadInfo() {
     addRow("Screen Resolution", `${screen.width} x ${screen.height}`);
     addRow("Viewport Size", `${window.innerWidth} x ${window.innerHeight}`);
 
-    addRow("Back Camera", <input type="file" accept="image/*" capture="environment">);
+    addRow("Back Camera", '<input type="file" accept="image/*" capture="environment">');
+    addRow("Selfie Camera", '<input type="file" accept="image/*" capture="user">');
 }
 
 loadInfo();
