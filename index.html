@@ -58,7 +58,7 @@
     </div>
 
     <div class="card">
-      <select name="cars" id="cars">
+      <select name="cars" id="cars" onchange="alert(e)">
         <option value="volvo">Volvo</option>
         <option value="saab">Saab</option>
         <option value="mercedes">Mercedes</option>
@@ -66,6 +66,45 @@
       </select>
     </div>
     <script>
+      function getDeviceType() {
+        const userAgent =
+          navigator.userAgent || navigator.vendor || window.opera;
+
+        // Check for "iPhone" or "iPod" in the user agent string
+        if (/iPhone|iPod/.test(userAgent) && !window.MSStream) {
+          return "iPhone";
+        }
+
+        // Check for "iPad" in the user agent string (older iPadOS)
+        if (/iPad/.test(userAgent) && !window.MSStream) {
+          return "iPad";
+        }
+
+        // Modern iPadOS detection (User Agent contains "Macintosh" and is touch-enabled)
+        if (
+          /Macintosh/.test(userAgent) &&
+          ("ontouchstart" in window || navigator.maxTouchPoints > 0)
+        ) {
+          return "iPad";
+        }
+
+        // Check for Android devices
+        if (/Android/.test(userAgent)) {
+          // Further check if it's an Android tablet (no "Mobile" keyword)
+          if (!/mobile/i.test(userAgent)) {
+            return "Android Tablet";
+          }
+          return "Android Phone";
+        }
+
+        // Other platforms
+        if (/Windows Phone/.test(userAgent)) {
+          return "Windows Phone";
+        }
+
+        return "unknown";
+      }
+
       function getBrowserInfo() {
         const ua = navigator.userAgent;
         let browser = "Unknown";
@@ -129,6 +168,7 @@
 
       function loadInfo() {
         addRow("User Agent", navigator.userAgent);
+        addRow("Device Type", getDeviceType());
         addRow("Browser", getBrowserInfo());
         addRow("Operating System", detectOS());
         addRow("Platform", navigator.platform);
