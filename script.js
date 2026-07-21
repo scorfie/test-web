@@ -103,18 +103,34 @@ function isWebGLSupported() {
 }
 
 function addRow(label, value) {
-  const table = document.getElementById("infoTable");
-  const row = document.createElement("tr");
+  const grid = document.getElementById("infoGrid");
 
-  const cell1 = document.createElement("td");
-  cell1.textContent = label;
+  const col = document.createElement("div");
+  col.className = "col-12 col-sm-6 col-lg-4";
 
-  const cell2 = document.createElement("td");
-  cell2.textContent = value;
+  const item = document.createElement("div");
+  item.className = "info-item h-100 p-3 rounded-3 border bg-light-subtle";
 
-  row.appendChild(cell1);
-  row.appendChild(cell2);
-  table.appendChild(row);
+  const labelEl = document.createElement("div");
+  labelEl.className = "text-muted small text-uppercase fw-semibold mb-1";
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement("div");
+  valueEl.className = "fw-semibold text-break mb-0";
+
+  if (typeof value === "boolean") {
+    const badge = document.createElement("span");
+    badge.className = `badge rounded-pill ${value ? "text-bg-success" : "text-bg-secondary"}`;
+    badge.textContent = value ? "Yes" : "No";
+    valueEl.appendChild(badge);
+  } else {
+    valueEl.textContent = value;
+  }
+
+  item.appendChild(labelEl);
+  item.appendChild(valueEl);
+  col.appendChild(item);
+  grid.appendChild(col);
 }
 
 function loadInfo() {

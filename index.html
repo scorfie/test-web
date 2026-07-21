@@ -1,52 +1,178 @@
 <!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Browser & User Agent Detector</title>
-        <link rel="stylesheet" href="style.css" />
-    </head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Browser & User Agent Detector</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-    <body>
-        <div class="card">
-            <h1>Browser & User Agent Info</h1>
+  <body class="bg-body-tertiary">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark shadow-sm sticky-top">
+      <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2 fw-semibold" href="#top">
+          <i class="bi bi-phone-fill fs-5"></i>
+          Device Inspector
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#mainNav"
+          aria-controls="mainNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+          <ul class="navbar-nav ms-auto mb-2 mb-md-0">
+            <li class="nav-item">
+              <a class="nav-link" href="#device-info">Device Info</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#camera-capture">Camera</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#car-select">Vehicle</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#download">Download</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
 
-            <table id="infoTable"></table>
+    <!-- Page header -->
+    <header id="top" class="bg-white border-bottom mb-4">
+      <div class="container py-4">
+        <h1 class="h3 fw-bold mb-1">Browser & User Agent Info</h1>
+        <p class="text-muted mb-0">
+          A quick snapshot of this browser, device, and a few interactive demos.
+        </p>
+      </div>
+    </header>
+
+    <main class="container pb-5">
+      <!-- Device & Browser Information -->
+      <section id="device-info" class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex align-items-center gap-2 py-3">
+          <i class="bi bi-cpu text-primary fs-5"></i>
+          <h2 class="h6 mb-0 text-uppercase fw-semibold">Device & Browser Information</h2>
+        </div>
+        <div class="card-body">
+          <div id="infoGrid" class="row g-3"></div>
+        </div>
+      </section>
+
+      <div class="row g-4">
+        <!-- Camera Capture -->
+        <div id="camera-capture" class="col-12 col-md-6 col-lg-4">
+          <div class="card shadow-sm h-100 hover-card">
+            <div class="card-header bg-white d-flex align-items-center gap-2 py-3">
+              <i class="bi bi-camera-fill text-primary fs-5"></i>
+              <h2 class="h6 mb-0 text-uppercase fw-semibold">Camera Capture</h2>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <label for="back-camera" class="form-label fw-semibold">
+                  <i class="bi bi-camera2 me-1"></i> Back Camera
+                </label>
+                <input
+                  id="back-camera"
+                  type="file"
+                  class="form-control"
+                  accept="image/*"
+                  capture="environment"
+                />
+              </div>
+              <div>
+                <label for="selfie-camera" class="form-label fw-semibold">
+                  <i class="bi bi-person-bounding-box me-1"></i> Selfie Camera
+                </label>
+                <input
+                  id="selfie-camera"
+                  type="file"
+                  class="form-control"
+                  accept="image/*"
+                  capture="user"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="card">
-            <label for="back-camera">Back Camera</label>
-            <input
-                id="back-camera"
-                type="file"
-                accept="image/*"
-                capture="environment"
-            />
-            <label for="selfie-camera">Selfie Camera</label>
-            <input
-                id="selfie-camera"
-                type="file"
-                accept="image/*"
-                capture="user"
-            />
-        </div>
-
-        <div class="card">
-            <label for="cars">Choose a car</label>
-            <select name="cars" id="cars" onchange="handleCarChange(event)">
+        <!-- Choose a car -->
+        <div id="car-select" class="col-12 col-md-6 col-lg-4">
+          <div class="card shadow-sm h-100 hover-card">
+            <div class="card-header bg-white d-flex align-items-center gap-2 py-3">
+              <i class="bi bi-car-front-fill text-primary fs-5"></i>
+              <h2 class="h6 mb-0 text-uppercase fw-semibold">Choose a Car</h2>
+            </div>
+            <div class="card-body">
+              <label for="cars" class="form-label fw-semibold">Available models</label>
+              <select
+                name="cars"
+                id="cars"
+                class="form-select"
+                onchange="handleCarChange(event)"
+              >
                 <option value="volvo">Volvo</option>
                 <option value="saab">Saab</option>
                 <option value="mercedes">Mercedes</option>
                 <option value="audi">Audi</option>
-            </select>
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div class="card">
-            <h2>Download Sample File</h2>
-            <button class="btn-download" onclick="sendFileToWebView()">
+        <!-- Download Sample File -->
+        <div id="download" class="col-12 col-md-6 col-lg-4">
+          <div class="card shadow-sm h-100 hover-card">
+            <div class="card-header bg-white d-flex align-items-center gap-2 py-3">
+              <i class="bi bi-file-earmark-arrow-down-fill text-primary fs-5"></i>
+              <h2 class="h6 mb-0 text-uppercase fw-semibold">Download Sample File</h2>
+            </div>
+            <div class="card-body d-flex flex-column">
+              <p class="text-muted small mb-3">
+                Sends a sample PDF to the native iOS or Android WebView download bridge.
+              </p>
+              <button
+                class="btn btn-primary mt-auto d-inline-flex align-items-center justify-content-center gap-2"
+                onclick="sendFileToWebView()"
+              >
+                <i class="bi bi-download"></i>
                 Download Base64 PDF
-            </button>
+              </button>
+            </div>
+          </div>
         </div>
-        <script src="script.js"></script>
-    </body>
+      </div>
+    </main>
+
+    <footer class="text-center text-muted small py-4">
+      Browser & User Agent Detector
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+  </body>
 </html>
