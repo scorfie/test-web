@@ -6,7 +6,10 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'"
+    />
     <title>Browser & User Agent Detector</title>
     <link
       rel="stylesheet"
@@ -143,12 +146,7 @@
               <label for="cars" class="form-label fw-semibold"
                 >Available models</label
               >
-              <select
-                name="cars"
-                id="cars"
-                class="form-select"
-                onchange="handleCarChange(event)"
-              >
+              <select name="cars" id="cars" class="form-select">
                 <option value="volvo">Volvo</option>
                 <option value="saab">Saab</option>
                 <option value="mercedes">Mercedes</option>
@@ -177,15 +175,15 @@
                 bridge.
               </p>
               <button
+                id="send-webview-btn"
                 class="btn btn-primary mt-auto d-inline-flex align-items-center justify-content-center gap-2"
-                onclick="sendFileToWebView()"
               >
                 <i class="bi bi-download"></i>
                 Download Base64 (postMessage)
               </button>
               <button
+                id="download-blob-btn"
                 class="btn btn-primary mt-auto d-inline-flex align-items-center justify-content-center gap-2"
-                onclick="downloadFile()"
               >
                 <i class="bi bi-download"></i>
                 Download Base64 (Blob)

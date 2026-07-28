@@ -190,6 +190,14 @@ function handleCarChange(event) {
   alert(`Selected: ${event.target.value}`);
 }
 
+document
+  .getElementById("send-webview-btn")
+  .addEventListener("click", sendFileToWebView);
+document
+  .getElementById("download-blob-btn")
+  .addEventListener("click", downloadFile);
+document.getElementById("cars").addEventListener("change", handleCarChange);
+
 loadInfo();
 
 window.addEventListener("resize", () => {
