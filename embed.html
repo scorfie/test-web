@@ -4,33 +4,252 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Embed Dailymotion</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f5f7;
+        --card: #ffffff;
+        --text: #1d1d1f;
+        --muted: #6e6e73;
+        --border: #d2d2d7;
+        --accent: #0866ff;
+        --accent-hover: #0552cc;
+        --error: #d70015;
+        --error-bg: #fdeceb;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121212;
+          --card: #1e1e1e;
+          --text: #f5f5f7;
+          --muted: #a1a1a6;
+          --border: #3a3a3c;
+          --accent: #3b82f6;
+          --accent-hover: #60a5fa;
+          --error: #ff6961;
+          --error-bg: #3a1f1f;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        padding: 32px 16px;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 960px;
+      }
+
+      h1 {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0 0 16px;
+      }
+
+      #link-form {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      @media (max-width: 520px) {
+        #link-form {
+          flex-direction: column;
+        }
+      }
+
+      #link-input {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px;
+        font-size: 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--card);
+        color: var(--text);
+      }
+
+      #link-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+      }
+
+      #link-form button {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        background: var(--accent);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      #link-form button:hover {
+        background: var(--accent-hover);
+      }
+
+      #link-form button:active {
+        transform: translateY(1px);
+      }
+
+      #link-error {
+        display: none;
+        margin: 0 0 16px;
+        padding: 8px 12px;
+        font-size: 13px;
+        color: var(--error);
+        background: var(--error-bg);
+        border-radius: 8px;
+      }
+
+      .video-wrapper {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        border-radius: 12px;
+        overflow: hidden;
+        background: var(--card);
+        border: 1px solid var(--border);
+      }
+
+      .video-wrapper iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      .placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 16px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .video-wrapper.has-video .placeholder {
+        display: none;
+      }
+    </style>
   </head>
   <body>
-    <div
-      style="
-        position: relative;
-        width: 960px;
-        height: 540px;
-        margin: 0 auto;
-        overflow: hidden;
-      "
-    >
-      <iframe
-        src="https://geo.dailymotion.com/player.html?video=xav8nce&controls=true"
-        width="960"
-        height="540"
-        style="border: none"
-        title="Dailymotion Video Player"
-        allowfullscreen
-        scrolling="no"
-        allow="
-          autoplay *;
-          encrypted-media *;
-          fullscreen *;
-          picture-in-picture *;
-          web-share *;
-        "
-      ></iframe>
+    <div class="card">
+      <h1>Embed a Dailymotion video</h1>
+
+      <form id="link-form">
+        <label for="link-input" class="sr-only" style="position: absolute; left: -9999px">
+          Dailymotion link
+        </label>
+        <input
+          id="link-input"
+          type="text"
+          placeholder="Enter Dailymotion link here"
+          autocomplete="off"
+        />
+        <button type="submit">Embed</button>
+      </form>
+      <p id="link-error"></p>
+
+      <div class="video-wrapper" id="video-wrapper">
+        <div class="placeholder">
+          Paste a Dailymotion link above (e.g. dai.ly/x8yo6fi) and press Embed
+        </div>
+        <iframe
+          id="dm-player"
+          src=""
+          title="Dailymotion Video Player"
+          allowfullscreen
+          scrolling="no"
+          allow="
+            autoplay *;
+            encrypted-media *;
+            fullscreen *;
+            picture-in-picture *;
+            web-share *;
+          "
+        ></iframe>
+      </div>
     </div>
+
+    <script>
+      function extractDailymotionId(input) {
+        const value = input.trim();
+
+        // Bare video id, e.g. "x8yo6fi"
+        if (/^x[a-z0-9]+$/i.test(value)) {
+          return value;
+        }
+
+        let url;
+        try {
+          url = new URL(value);
+        } catch (e) {
+          return null;
+        }
+
+        const segments = url.pathname.split("/").filter(Boolean);
+        if (segments.length === 0) return null;
+
+        // dai.ly/x8yo6fi -> id is the only segment
+        if (url.hostname === "dai.ly") {
+          return segments[0];
+        }
+
+        // dailymotion.com/video/x8yo6fi_title or /embed/video/x8yo6fi
+        const videoIndex = segments.findIndex((s) => s === "video");
+        const idSegment =
+          videoIndex !== -1 && segments[videoIndex + 1]
+            ? segments[videoIndex + 1]
+            : segments[segments.length - 1];
+
+        return idSegment.split("_")[0] || null;
+      }
+
+      document
+        .getElementById("link-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const errorEl = document.getElementById("link-error");
+          errorEl.style.display = "none";
+
+          const input = document.getElementById("link-input").value;
+          const videoId = extractDailymotionId(input);
+
+          if (!videoId) {
+            errorEl.textContent =
+              "Couldn't find a Dailymotion video ID in that link.";
+            errorEl.style.display = "block";
+            return;
+          }
+
+          const iframe = document.getElementById("dm-player");
+          const wrapper = document.getElementById("video-wrapper");
+          iframe.src = `https://geo.dailymotion.com/player.html?video=${encodeURIComponent(videoId)}&controls=true`;
+          wrapper.classList.add("has-video");
+        });
+    </script>
   </body>
 </html>
