@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Dailymotion Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --ink:#14161a; --muted:#5c6470; --line:#d5dbe4;
+  --accent:#0057d9; --accent-ink:#ffffff; --stage:#0b0d12; --stage-ink:#9aa4b2; --err:#b3261e;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1116; --surface:#181b22; --ink:#eef1f6; --muted:#98a2b3; --line:#2b303b;
+    --accent:#4c8dff; --accent-ink:#06122b; --stage:#000000; --stage-ink:#8b95a5; --err:#ff8a80;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1116; --surface:#181b22; --ink:#eef1f6; --muted:#98a2b3; --line:#2b303b;
+  --accent:#4c8dff; --accent-ink:#06122b; --stage:#000000; --stage-ink:#8b95a5; --err:#ff8a80;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  line-height:1.5; min-height:100vh;
+}
+main{max-width:920px; margin:0 auto; padding:clamp(20px,5vw,56px) clamp(16px,4vw,32px)}
+h1{font-size:clamp(1.6rem,4.5vw,2.4rem); line-height:1.15; margin:0 0 6px; font-weight:700; letter-spacing:-.01em}
+.sub{margin:0 0 24px; color:var(--muted); max-width:60ch}
+.bar{display:flex; gap:8px; flex-wrap:wrap}
+input{
+  flex:1 1 320px; min-width:0; font:inherit; color:var(--ink); background:var(--surface);
+  border:1.5px solid var(--line); border-radius:10px; padding:13px 14px;
+}
+input::placeholder{color:var(--muted)}
+button,.link{font:inherit; cursor:pointer}
+button{
+  border:0; border-radius:10px; padding:13px 22px; font-weight:600;
+  background:var(--accent); color:var(--accent-ink);
+}
+button.ghost{background:transparent; color:var(--ink); border:1.5px solid var(--line)}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.msg{min-height:1.5em; margin:10px 2px 14px; font-size:.95rem; color:var(--muted)}
+.msg.err{color:var(--err)}
+.stage{
+  position:relative; width:100%; aspect-ratio:16/9; background:var(--stage);
+  border-radius:14px; overflow:hidden; display:grid; place-items:center;
+}
+.stage iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+.empty{color:var(--stage-ink); text-align:center; padding:24px; max-width:44ch}
+.empty strong{display:block; color:#fff; font-size:1.05rem; margin-bottom:4px}
+.foot{display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:12px; font-size:.92rem; color:var(--muted)}
+.foot a{color:var(--accent); font-weight:600}
+[hidden]{display:none !important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Paste a Dailymotion link, watch it here</h1>
+  <p class="sub">Works with dailymotion.com/video links, dai.ly short links, embed links, or just the video ID.</p>
+
+  <div class="bar">
+    <input id="url" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+           placeholder="https://www.dailymotion.com/video/x…" aria-label="Dailymotion video link">
+    <button id="play" type="button">Play video</button>
+    <button id="clear" type="button" class="ghost" hidden>Clear</button>
+  </div>
+  <div id="msg" class="msg" role="status" aria-live="polite"></div>
+
+  <div id="stage" class="stage">
+    <div class="empty" id="empty">
+      <strong>No video loaded yet</strong>
+      Paste a link above and press Play video. It plays right on this page.
+    </div>
+  </div>
+
+  <div class="foot" id="foot" hidden>
+    <span id="vid"></span>
+    <a id="ext" href="#" target="_blank" rel="noopener noreferrer">Not playing? Watch on Dailymotion</a>
+  </div>
+</main>
+
+<script>
+(function(){
+  var input = document.getElementById('url');
+  var playBtn = document.getElementById('play');
+  var clearBtn = document.getElementById('clear');
+  var msg = document.getElementById('msg');
+  var stage = document.getElementById('stage');
+  var empty = document.getElementById('empty');
+  var foot = document.getElementById('foot');
+  var vid = document.getElementById('vid');
+  var ext = document.getElementById('ext');
+
+  function parseId(raw){
+    var s = (raw || '').trim();
+    if(!s) return null;
+    if(/^x[a-z0-9]{3,}$/i.test(s)) return s;
+    var m = s.match(/dailymotion\.com\/(?:embed\/)?video\/([a-z0-9]+)/i)
+         || s.match(/dai\.ly\/([a-z0-9]+)/i);
+    if(!m && /dailymotion\.com/i.test(s)) m = s.match(/[?&]video=([a-z0-9]+)/i);
+    return m ? m[1] : null;
+  }
+
+  function setMsg(text, isErr){
+    msg.textContent = text;
+    msg.className = 'msg' + (isErr ? ' err' : '');
+  }
+
+  function play(){
+    var id = parseId(input.value);
+    if(!id){
+      setMsg(input.value.trim()
+        ? "That doesn't look like a Dailymotion video link. Try one like dailymotion.com/video/x8abc12 or dai.ly/x8abc12."
+        : 'Paste a Dailymotion link first.', true);
+      input.focus();
+      return;
+    }
+    var old = stage.querySelector('iframe');
+    if(old) old.remove();
+    var f = document.createElement('iframe');
+    f.src = 'https://geo.dailymotion.com/player.html?video=' + encodeURIComponent(id);
+    f.title = 'Dailymotion video ' + id;
+    f.allow = 'autoplay; fullscreen; picture-in-picture; encrypted-media';
+    f.setAttribute('allowfullscreen', '');
+    f.referrerPolicy = 'strict-origin-when-cross-origin';
+    stage.appendChild(f);
+    empty.hidden = true;
+    vid.textContent = 'Video ID: ' + id;
+    ext.href = 'https://www.dailymotion.com/video/' + encodeURIComponent(id);
+    foot.hidden = false;
+    clearBtn.hidden = false;
+    setMsg('Loading video…', false);
+    f.addEventListener('load', function(){ setMsg('', false); });
+  }
+
+  function clearAll(){
+    var f = stage.querySelector('iframe');
+    if(f) f.remove();
+    empty.hidden = false;
+    foot.hidden = true;
+    clearBtn.hidden = true;
+    input.value = '';
+    setMsg('', false);
+    input.focus();
+  }
+
+  playBtn.addEventListener('click', play);
+  clearBtn.addEventListener('click', clearAll);
+  input.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ e.preventDefault(); play(); } });
+  input.addEventListener('paste', function(){ setTimeout(function(){ if(parseId(input.value)) play(); }, 0); });
+})();
+</script>
+</body>
+</html>
