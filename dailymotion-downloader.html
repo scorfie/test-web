@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dailymotion preview and download</title>
+<style>
+:root{--bg:#eef2f7;--card:#fff;--ink:#0d1b2a;--muted:#5b6b7c;--line:#d5dde6;--accent:#0066dc;--on-accent:#fff;--err:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0b1320;--card:#121c2c;--ink:#e8eef6;--muted:#8a9bb0;--line:#22324a;--accent:#4d9bff;--on-accent:#06101f;--err:#ff8a7a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Avenir Next","Segoe UI",system-ui,sans-serif;padding:40px 16px 64px}
+.wrap{max-width:780px;margin:0 auto}
+h1{font-size:clamp(1.8rem,5vw,2.6rem);line-height:1.1;letter-spacing:-.02em;margin:0 0 8px}
+.lead{color:var(--muted);margin:0 0 28px;max-width:52ch}
+.slot{display:flex;gap:0;background:var(--card);border:2px solid var(--line);border-radius:999px;padding:5px;transition:border-color .15s}
+.slot:focus-within{border-color:var(--accent)}
+.slot input{flex:1;min-width:0;border:0;background:transparent;color:var(--ink);font:inherit;padding:10px 16px;outline:0}
+button{font:inherit;cursor:pointer;border:0;border-radius:999px;padding:10px 22px;background:var(--accent);color:var(--on-accent);font-weight:600}
+button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+button.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);padding:7px 14px;font-weight:500}
+#status{min-height:1.5em;margin:10px 16px 0;color:var(--muted);font-size:.92rem}
+#status.err{color:var(--err)}
+#result{display:none;margin-top:20px}
+.player{position:relative;padding-top:56.25%;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 12px 40px rgba(0,20,50,.25)}
+.player iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+#title{font-size:1.15rem;font-weight:650;margin:16px 0 2px}
+#meta{color:var(--muted);font-size:.92rem;margin:0}
+h2{font-size:1rem;margin:28px 0 6px}
+.q{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:12px 0;border-top:1px solid var(--line)}
+.q b{font-size:1.05rem}.q small{color:var(--muted);margin-left:6px}
+.acts{display:flex;gap:8px}
+.q progress{width:100%;height:8px;accent-color:var(--accent)}
+.hint{color:var(--muted);font-size:.9rem}
+pre{margin:8px 0 0;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow-x:auto;font-size:.85rem}
+@media (max-width:520px){.slot{flex-direction:column;border-radius:20px}.slot button{width:100%}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>Preview and save Dailymotion videos</h1>
+  <p class="lead">Paste a Dailymotion link to watch it here, then pick a quality to download.</p>
+
+  <div class="slot">
+    <input id="url" type="text" inputmode="url" autocomplete="off" placeholder="https://www.dailymotion.com/video/x8abcde" aria-label="Dailymotion link">
+    <button id="go">Load video</button>
+  </div>
+  <div id="status" role="status"></div>
+
+  <section id="result">
+    <div class="player" id="player"></div>
+    <p id="title"></p>
+    <p id="meta"></p>
+
+    <h2>Download</h2>
+    <div id="formats"></div>
+    <p class="hint">Only download videos you own or have permission to save. Dailymotion's terms restrict copying other people's content.</p>
+    <pre id="cmd"></pre>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script>
+$(function () {
+  var $url = $('#url'), $go = $('#go'), $status = $('#status');
+  var current = { id: null, title: '' };
+
+  function say(msg, isErr) { $status.text(msg || '').toggleClass('err', !!isErr); }
+
+  // Accepts /video/ID, /embed/video/ID, dai.ly/ID, playlist links with ?video=ID, or a bare ID.
+  function parseId(s) {
+    s = $.trim(s);
+    var m = s.match(/(?:dailymotion\.com\/(?:embed\/)?video\/|dai\.ly\/)([a-z0-9]+)/i) ||
+            s.match(/[?&]video=([a-z0-9]+)/i) ||
+            s.match(/^(x[a-z0-9]{4,})$/i);
+    return m ? m[1] : null;
+  }
+
+  function fmtDuration(sec) {
+    sec = Math.round(sec || 0);
+    var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+  }
+
+  function copy(text, $btn) {
+    var done = function () { var t = $btn.text(); $btn.text('Copied'); setTimeout(function () { $btn.text(t); }, 1400); };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () { say('Copy failed. Select the text and copy it manually.', true); });
+    else say('Clipboard is not available in this browser.', true);
+  }
+
+  function load() {
+    var id = parseId($url.val());
+    if (!id) { say('That is not a Dailymotion link. Try one like dailymotion.com/video/x8abcde.', true); return; }
+    current = { id: id, title: '' };
+    say('');
+    $('#title').text('Loading…'); $('#meta').text('');
+    $('#player').html('<iframe src="https://www.dailymotion.com/embed/video/' + id +
+      '" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Dailymotion video player"></iframe>');
+    $('#cmd').text('yt-dlp "https://www.dailymotion.com/video/' + id + '"');
+    $('#result').show();
+
+    $.getJSON('https://api.dailymotion.com/video/' + id + '?fields=title,duration,owner.screenname')
+      .done(function (d) {
+        current.title = d.title || '';
+        $('#title').text(d.title || 'Video ' + id);
+        $('#meta').text((d['owner.screenname'] ? 'By ' + d['owner.screenname'] + ' · ' : '') + fmtDuration(d.duration));
+      })
+      .fail(function () { $('#title').text('Video ' + id); });
+
+    loadFormats(id);
+  }
+
+  function loadFormats(id) {
+    var $f = $('#formats').html('<p class="hint">Looking for download options…</p>');
+    var fail = function (why) {
+      $f.html('<p class="hint">' + why + ' You can still save this video with the command below (needs <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener">yt-dlp</a>).</p>');
+    };
+
+    fetch('https://www.dailymotion.com/player/metadata/video/' + id)
+      .then(function (r) { return r.json(); })
+      .then(function (m) {
+        if (m.error) return fail((m.error.message || 'Dailymotion says this video is not available.'));
+        var auto = m.qualities && m.qualities.auto && m.qualities.auto[0];
+        if (!auto) return fail('No stream was listed for this video.');
+        return fetch(auto.url).then(function (r) { return r.text(); }).then(function (txt) {
+          var list = parseMaster(txt, auto.url);
+          if (!list.length) list = [{ h: 0, bw: 0, url: auto.url }];
+          renderFormats(list);
+        });
+      })
+      .catch(function () { fail('Your browser blocked the request to Dailymotion (CORS), so streams could not be listed.'); });
+  }
+
+  function parseMaster(text, base) {
+    var lines = text.split(/\r?\n/), out = [], seen = {};
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf('#EXT-X-STREAM-INF') !== 0 || !lines[i + 1]) continue;
+      out.push({
+        h: +((lines[i].match(/RESOLUTION=\d+x(\d+)/) || [])[1] || 0),
+        bw: +((lines[i].match(/BANDWIDTH=(\d+)/) || [])[1] || 0),
+        url: new URL(lines[i + 1].trim(), base).href
+      });
+    }
+    out.sort(function (a, b) { return b.h - a.h || b.bw - a.bw; });
+    return out.filter(function (f) { return seen[f.h] ? false : (seen[f.h] = true); });
+  }
+
+  function renderFormats(list) {
+    var $f = $('#formats').empty();
+    list.forEach(function (f) {
+      var $row = $('<div class="q"></div>');
+      $row.append('<span><b>' + (f.h ? f.h + 'p' : 'Best available') + '</b>' +
+        (f.bw ? '<small>about ' + (f.bw / 1e6).toFixed(1) + ' Mbps</small>' : '') + '</span>');
+      var $acts = $('<span class="acts"></span>').appendTo($row);
+      var $dl = $('<button>Download</button>').appendTo($acts);
+      var $cp = $('<button class="ghost">Copy ffmpeg command</button>').appendTo($acts);
+      $cp.on('click', function () { copy('ffmpeg -i "' + f.url + '" -c copy video.mp4', $cp); });
+      $dl.on('click', function () { download(f, $dl, $row); });
+      $f.append($row);
+    });
+  }
+
+  // Dailymotion streams are HLS: many small segments. We fetch them in order and join them.
+  async function download(f, $btn, $row) {
+    var $bar = $('<progress value="0" max="1"></progress>').appendTo($row);
+    $btn.prop('disabled', true).text('Downloading…');
+    try {
+      var text = await (await fetch(f.url)).text();
+      var lines = text.split(/\r?\n/);
+      var segs = lines.filter(function (l) { return l && l[0] !== '#'; })
+                      .map(function (l) { return new URL(l.trim(), f.url).href; });
+      if (!segs.length) throw new Error('empty playlist');
+      var mapLine = lines.filter(function (l) { return l.indexOf('#EXT-X-MAP') === 0; })[0];
+      var parts = [];
+      if (mapLine) {
+        var initUri = mapLine.match(/URI="([^"]+)"/)[1];
+        parts.push(await (await fetch(new URL(initUri, f.url).href)).arrayBuffer());
+      }
+      for (var i = 0; i < segs.length; i++) {
+        var r = await fetch(segs[i]);
+        if (!r.ok) throw new Error('segment ' + (i + 1) + ' failed');
+        parts.push(await r.arrayBuffer());
+        $bar.attr('value', (i + 1) / segs.length);
+      }
+      var ext = mapLine ? 'mp4' : 'ts';
+      var blob = new Blob(parts, { type: mapLine ? 'video/mp4' : 'video/mp2t' });
+      var name = ((current.title || current.id).replace(/[^\w\- ]+/g, '').trim().slice(0, 80) || current.id) + '.' + ext;
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+      $btn.text('Saved');
+    } catch (e) {
+      $btn.prop('disabled', false).text('Try again');
+      say('Download failed (' + e.message + '). Use the ffmpeg or yt-dlp command instead.', true);
+    }
+    $bar.remove();
+  }
+
+  $go.on('click', load);
+  $url.on('keydown', function (e) { if (e.key === 'Enter') load(); });
+});
+</script>
+</body>
+</html>
